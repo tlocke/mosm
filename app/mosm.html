@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- 
+
+    This file is part of MOSM.
+
+    MOSM is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    MOSM is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with MOSM.  If not, see <http://www.gnu.org/licenses/>.
+
+ -->
+
+<title>OpenStreetMap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<script src="http://www.openlayers.org/api/OpenLayers.js"
+	type="text/javascript"></script>
+
+<script type="text/javascript">
+	// Request repeated updates.
+	var lat = 51.508;
+	var lon = -0.118;
+	var zoom = 13;
+	var geo = null;
+	var dispProj = new OpenLayers.Projection("EPSG:4326");
+
+	var map; //complex object of type OpenLayers.Map
+    var layer;
+    
+	function log(message) {
+		ulElement = document.getElementById('log');
+		listElement = document.createElement("li");
+		listElement.textContent = message;
+		ulElement.insertBefore(listElement, ulElement.firstChild);
+		if (ulElement.childNodes.length > 10) {
+			ulElement.removeChild(ulElement.lastChild);
+		}
+	}
+
+	function updatePosition(position) {
+		coords = position.coords
+		log("Updating position: lat " + coords.latitude + " lon "
+				+ coords.longitude + " alt " + coords.altitude + " accuracy "
+				+ coords.accuracy + " altitude accuracy "
+				+ coords.altitudeAccuracy + " heading " + coords.heading
+				+ " speed " + coords.speed);
+		var lonLat = new OpenLayers.LonLat(coords.longitude, coords.latitude)
+				.transform(dispProj, map.getProjectionObject());
+		map.panTo(lonLat);
+	}
+
+	function handleError(positionError) {
+		log('Attempt to get location failed: ' + positionError.message
+				+ ' error code ' + positionError.code);
+	}
+
+	function init() {
+
+		try {
+			geo = navigator.geolocation;
+		} catch (e) {
+		}
+
+		if (geo == null) {
+			alert("Can't get GEO native.");
+		}
+		var watchId = geo.watchPosition(updatePosition, handleError);
+
+		map = new OpenLayers.Map('map', {
+            controls: [
+                new OpenLayers.Control.Navigation(),
+                new OpenLayers.Control.ZoomPanel(),
+                new OpenLayers.Control.KeyboardDefaults(),
+                new OpenLayers.Control.Attribution()
+            ]
+		});
+        layer = new OpenLayers.Layer.OSM();
+        layer.buffer = 0;
+		map.addLayer(layer);
+
+		if (!map.getCenter()) {
+			var lonLat = new OpenLayers.LonLat(lon, lat).transform(dispProj,
+					map.getProjectionObject());
+			map.setCenter(lonLat, zoom);
+		}
+
+	}
+
+	function getCurrentPosition() {
+		geo.getCurrentPosition(updatePosition, handleError);
+	}
+</script>
+
+</head>
+
+<!-- body.onload is called once the page is loaded (call the 'init' function) -->
+<body onload="init();">
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 10em"
+	id="map"></div>
+<div style="position: absolute; bottom: 0; left: 0; height: 10em">
+<form action="">
+<fieldset style="border-style: none;"><input type="button" value="Get Position"
+	onclick="getCurrentPosition();" /> <a href="https://github.com/tlocke/mosm/wiki">Wiki</a></fieldset>
+</form>
+
+<ul id="log">
+	<li>Starting Log</li>
+</ul></div>
+</body>
+</html>
